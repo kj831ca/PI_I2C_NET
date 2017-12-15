@@ -8,6 +8,7 @@ using Mono.Unix;
 using Mono.Unix.Native;
 using PI_I2C_NET;
 using System.IO;
+using System.Threading;
 
 namespace AMG88xx_DotNET
 {
@@ -63,9 +64,9 @@ namespace AMG88xx_DotNET
             pixelData = new short[8, 8];
             if ( SetMode(AMG88xxCtrlMode.NORMAL) < 0)
                 throw new IOException(String.Format("Error opening bus '{0}': {1}", i2cPath, UnixMarshal.GetErrorDescription(Stdlib.GetLastError())));
-            if(Reset(AMG88xxReset.INITIAL_RESET)<0)
+			if(Reset(AMG88xxReset.FLAG_RESET)<0)
                 throw new IOException(String.Format("Error opening bus '{0}': {1}", i2cPath, UnixMarshal.GetErrorDescription(Stdlib.GetLastError())));
-
+			Thread.Sleep (20);
         }
         private short scaleSign12Bit(int data)
         {
@@ -75,14 +76,15 @@ namespace AMG88xx_DotNET
             else
                 return (short)data;
         }
-        public int ReadThermister()
+        private int getThermister()
         {
             return _i2cBus.readSMBUSWord(ThermisterReg);
         }
 
-        public double ReadThermister(int data)
+        public double ReadThermister()
         {
-            if (data < 0) return double.NaN;
+			int data = getThermister ();
+			if (data < 0) return double.NaN;
             short scaleData = scaleSign12Bit(data);
             return 0.0625 * scaleData;
         }
@@ -100,14 +102,15 @@ namespace AMG88xx_DotNET
             {
                 if(_i2cBus.read_SMBUS_i2c_Block_data(addr,ref blockData)>0)
                 {
-                    for(int j=0;j<16;j+=2)
+					debug (blockData);
+					for(int j=0;j<16;j+=2)
                     {
-                        pixelData[row, j / 2] = (short)(blockData[j] | (blockData[j++] << 8));
+                        pixelData[row, j / 2] = (short)(blockData[j] | (blockData[j+1] << 8));
                     }
                     row++;
                     for(int j=16;j<32;j+=2)
                     {
-                        pixelData[row, (j-16)/2] = (short)(blockData[j] | (blockData[j++] << 8));
+                        pixelData[row, (j-16)/2] = (short)(blockData[j] | (blockData[j+1] << 8));
                     }
                     row++;
                 } else
@@ -118,6 +121,21 @@ namespace AMG88xx_DotNET
             }
             return pixelData;
         }
+		public short ReadWord(byte regAddr)
+		{
+			return (short)_i2cBus.readSMBUSWord (regAddr);
+		}
+		public void debug(byte[] data)
+		{
+			StringBuilder str = new StringBuilder ();
+			foreach (byte b in data) 
+			{
+				str.Append (b.ToString ("X2"));
+				str.Append (" ");
+			}
+			Console.WriteLine (str.ToString ());
+
+		}
         public StringBuilder PrintPixel(short[,]pixel)
         {
             StringBuilder str = new StringBuilder();
@@ -128,7 +146,7 @@ namespace AMG88xx_DotNET
                     str.Append(pixel[i, j].ToString());
                     str.Append(" ");
                 }
-                str.Append("/r/n");
+                str.Append("\r\n");
             }
             return str;
         }

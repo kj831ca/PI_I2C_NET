@@ -42,12 +42,21 @@ namespace SampleApp
             //	printfTemp (pixels);
             //}
             AMG8833 gridSensor = new AMG8833();
+			Console.WriteLine ("Thermister Reading : {0}", gridSensor.ReadThermister ());
+			Console.WriteLine ("Read Pixel 0x80: {0}", gridSensor.ReadWord (0x80));
             short[,] pixelData = gridSensor.ReadPixels();
-            if(pixelData != null)
-            {
-                Console.Write(gridSensor.PrintPixel(pixelData));
-            }
 
+			do {
+				while(!Console.KeyAvailable) {
+					pixelData = gridSensor.ReadPixels();
+					if (pixelData != null) 
+					{
+						Console.Write (gridSensor.PrintPixel (pixelData));
+					}
+					Console.WriteLine("-------------------------");
+					Thread.Sleep(100);
+				}
+			} while(Console.ReadKey (true).Key != ConsoleKey.Escape);
 		}
 		static double scaleToTemp(int t_read)
 		{
