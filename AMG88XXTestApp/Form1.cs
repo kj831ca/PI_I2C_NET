@@ -16,13 +16,44 @@ namespace AMG88XXTestApp
         AMG8833 _gridSensor;
         PixelColorMap _pixelColor;
         Bitmap bitmapSensor = new Bitmap(8, 8);
+        StringBuilder tempTables;
         public Form1()
         {
             _gridSensor = new AMG8833();
             _pixelColor = new PixelColorMap(_gridSensor);
             InitializeComponent();
+            tempTables = new StringBuilder();
+            _gridSensor.OnPixelsDataChanged += _gridSensor_OnPixelsDataChanged;
             _pixelColor.OnPixelColorChanged += _pixelColor_OnPixelColorChanged;
         }
+        private delegate void UpdateTextTable(StringBuilder tables);
+        private void updateTextTable(StringBuilder tables)
+        {
+            if(this.textBoxTempTable.InvokeRequired)
+            {
+                this.Invoke(new UpdateTextTable(updateTextTable), new object[] { tables });
+                return;
+            }
+            string[] lines = tables.ToString().Split(new char[] { '\n' });
+            textBoxTempTable.Lines = lines;
+        }
+        private void _gridSensor_OnPixelsDataChanged(object sender, short[,] e)
+        {
+            double d_temp;
+            tempTables.Clear();
+            for (int row=0;row<8;row++)
+            {
+                for (int col=0;col<8;col++)
+                {
+                    d_temp = e[row, col] * 0.25;
+                    tempTables.Append(d_temp.ToString("0.00"));
+                    tempTables.Append(" ");
+                }
+                tempTables.Append("\n");
+            }
+            updateTextTable(tempTables);
+        }
+
         private delegate void UpdatePictureBox(Bitmap img);
 
         private void updatePictureBox(Bitmap bitMap)
