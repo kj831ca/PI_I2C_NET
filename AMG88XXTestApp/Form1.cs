@@ -47,6 +47,7 @@ namespace AMG88XXTestApp
                 {
                     bitmapSensor.SetPixel(x, y, e[x, y]);
                 }
+			updatePictureBox (bitmapSensor);
         }
 
         private void buttonStartPolling_Click(object sender, EventArgs e)

@@ -43,16 +43,17 @@ namespace AMG88xx_DotNET
             _temperatureTable = new Color[1024];
             byte red, green, blue;
             double temp,d_temp;
+			double threshold = 30.0;
             for(int i=0;i<1024;i++)
             {
                 temp = i * 0.25;
                 //Calculate red level
-                if(temp <= 60 ) // 60 C
+				if(temp <= threshold ) // 60 C
                 {
                     red = 255;
                 }else
                 {
-                    d_temp = temp - 60;
+					d_temp = temp - threshold;
                     d_temp = 329.698727 * Math.Pow(d_temp, -0.133204);
                     red = (byte)d_temp;
                     if (d_temp < 0)
@@ -62,7 +63,7 @@ namespace AMG88xx_DotNET
                 }
 
                 //Calculate blue level 
-                if(temp >=60)
+				if(temp >=threshold)
                 {
                     blue = 255;
                 }else
@@ -101,7 +102,7 @@ namespace AMG88xx_DotNET
                     if (d_temp > 255)
                         green = 255;
                 }
-                _temperatureTable[i] = Color.FromArgb(red, green, blue);
+                _temperatureTable[i] = Color.FromArgb(blue, green, red);
             }
 
 
