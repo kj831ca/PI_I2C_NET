@@ -49,6 +49,7 @@
             this.buttonStartPolling.TabIndex = 1;
             this.buttonStartPolling.Text = "Start Monitor";
             this.buttonStartPolling.UseVisualStyleBackColor = true;
+            this.buttonStartPolling.Click += new System.EventHandler(this.buttonStartPolling_Click);
             // 
             // Form1
             // 
