@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleApp", "SampleApp\Samp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AMG88xx_DotNET", "AMG88xx_DotNET\AMG88xx_DotNET.csproj", "{DD0CD6CE-23A7-4C10-ADA4-EDF25E99F5D5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AMG88XXTestApp", "AMG88XXTestApp\AMG88XXTestApp.csproj", "{D300C7C0-7933-4EF9-AFAA-AE4BD1E0CECB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{DD0CD6CE-23A7-4C10-ADA4-EDF25E99F5D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DD0CD6CE-23A7-4C10-ADA4-EDF25E99F5D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DD0CD6CE-23A7-4C10-ADA4-EDF25E99F5D5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D300C7C0-7933-4EF9-AFAA-AE4BD1E0CECB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D300C7C0-7933-4EF9-AFAA-AE4BD1E0CECB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D300C7C0-7933-4EF9-AFAA-AE4BD1E0CECB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D300C7C0-7933-4EF9-AFAA-AE4BD1E0CECB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

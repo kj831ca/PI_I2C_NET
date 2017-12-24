@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.ComponentModel;
 using Mono.Posix;
 using Mono.Unix;
 using Mono.Unix.Native;
@@ -19,7 +20,11 @@ namespace AMG88xx_DotNET
         public const byte ResetReg = 0x01;
         public const byte ThermisterReg = 0x0E;
         private string i2cPath;
-        private short[,] pixelData;
+        private short[,] pixelData, lastPixelData;
+        private BackgroundWorker samplingTask;
+        private bool isPooling = false;
+        private object lockI2C = new object();
+        public event EventHandler<short[,]> OnPixelsDataChanged;
         public enum AMG88xxReset : byte
         {
             FLAG_RESET = 0x30,
@@ -62,11 +67,57 @@ namespace AMG88xx_DotNET
         private void init()
         {
             pixelData = new short[8, 8];
+            lastPixelData = new short[8, 8];
             if ( SetMode(AMG88xxCtrlMode.NORMAL) < 0)
                 throw new IOException(String.Format("Error opening bus '{0}': {1}", i2cPath, UnixMarshal.GetErrorDescription(Stdlib.GetLastError())));
 			if(Reset(AMG88xxReset.FLAG_RESET)<0)
                 throw new IOException(String.Format("Error opening bus '{0}': {1}", i2cPath, UnixMarshal.GetErrorDescription(Stdlib.GetLastError())));
 			Thread.Sleep (20);
+            samplingTask = new BackgroundWorker();
+            samplingTask.DoWork += SamplingTask_DoWork;
+
+        }
+        private bool isEqualLastPixels(ref short[,] pixels)
+        {
+            bool equal = true;
+            if (pixels == null) return false;
+            for(int i =0;i<8; i++)
+                for(int j=0; j<8; j++)
+                {
+                    if(pixels[i,j] != lastPixelData[i,j])
+                    {
+                        equal = false;
+                        lastPixelData[i, j] = pixels[i, j];
+                    }
+                }
+            return equal;
+        }
+        private void SamplingTask_DoWork(object sender, DoWorkEventArgs e)
+        {
+            short[,] pixels;
+            while (isPooling)
+            {
+                pixels = ReadPixels();
+                if(!isEqualLastPixels(ref pixels))
+                {
+                    if (pixels != null)
+                        OnPixelsDataChanged?.Invoke(this, pixels);
+                }
+                Thread.Sleep(100);
+            }
+        }
+        public void StartMonitor()
+        {
+            if(!samplingTask.IsBusy)
+            {
+                isPooling = true;
+                samplingTask.RunWorkerAsync();
+            }
+        }
+        public void StopMonitor()
+        {
+            isPooling = false;
+            Thread.Sleep(100);
         }
         private short scaleSign12Bit(int data)
         {
@@ -78,7 +129,10 @@ namespace AMG88xx_DotNET
         }
         private int getThermister()
         {
-            return _i2cBus.readSMBUSWord(ThermisterReg);
+            lock (lockI2C)
+            {
+                return _i2cBus.readSMBUSWord(ThermisterReg);
+            }
         }
 
         public double ReadThermister()
@@ -100,22 +154,26 @@ namespace AMG88xx_DotNET
 
             for(int i=0;i<4;i++)
             {
-                if(_i2cBus.read_SMBUS_i2c_Block_data(addr,ref blockData)>0)
+                lock (lockI2C)
                 {
-					debug (blockData);
-					for(int j=0;j<16;j+=2)
+                    if (_i2cBus.read_SMBUS_i2c_Block_data(addr, ref blockData) > 0)
                     {
-                        pixelData[row, j / 2] = (short)(blockData[j] | (blockData[j+1] << 8));
+                        debug(blockData);
+                        for (int j = 0; j < 16; j += 2)
+                        {
+                            pixelData[row, j / 2] = (short)(blockData[j] | (blockData[j + 1] << 8));
+                        }
+                        row++;
+                        for (int j = 16; j < 32; j += 2)
+                        {
+                            pixelData[row, (j - 16) / 2] = (short)(blockData[j] | (blockData[j + 1] << 8));
+                        }
+                        row++;
                     }
-                    row++;
-                    for(int j=16;j<32;j+=2)
+                    else
                     {
-                        pixelData[row, (j-16)/2] = (short)(blockData[j] | (blockData[j+1] << 8));
+                        return null; //We got some error here .
                     }
-                    row++;
-                } else
-                {
-                    return null; //We got some error here .
                 }
                 addr += 32;
             }
@@ -123,7 +181,10 @@ namespace AMG88xx_DotNET
         }
 		public short ReadWord(byte regAddr)
 		{
-			return (short)_i2cBus.readSMBUSWord (regAddr);
+            lock (lockI2C)
+            {
+                return (short)_i2cBus.readSMBUSWord(regAddr);
+            }
 		}
 		public void debug(byte[] data)
 		{
